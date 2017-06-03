@@ -19,7 +19,7 @@ namespace Test
                 var np = scope.Import("numpy", "np");
                 var plt = scope.Import("matplotlib.pylab", "plt");
 
-                var x = Numpy.New(new double[]{ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 });
+                var x = Numpy.NewArray(new double[]{ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 });
                 var y = np.sin(x);
                 scope.Set("x", x);
                 scope.Set("y", y);
@@ -50,7 +50,7 @@ namespace Test
                 var np = scope.Import("numpy", "np");
                 var plt = scope.Import("matplotlib.pylab", "plt");
 
-                var x = Numpy.New(new double[] { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 });
+                var x = Numpy.NewArray(new double[] { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 });
                 var y = np.sin(x);
                 scope.Set("x", x);
                 scope.Set("y", y);
@@ -60,7 +60,7 @@ namespace Test
                     "plt.plot(x[1:], y[1:]) \n"
                 );
                 var fig = scope.Get("fig");
-                plotdata = Matplotlib.SaveToArray(fig, 200, "png");
+                plotdata = Matplotlib.SaveFigureToArray(fig, 200, "png");
             }
 
             Stream stream = new MemoryStream(plotdata);

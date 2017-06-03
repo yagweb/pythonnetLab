@@ -1,7 +1,4 @@
-﻿using Python.Runtime;
-using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+﻿using System;
 
 namespace Python.Runtime
 {
@@ -24,7 +21,7 @@ namespace Python.Runtime
 
         internal static PyObject BytesIO;
 
-        public static byte[] SaveToArray(PyObject fig, int dpi = 200, string format = "png")
+        public static byte[] SaveFigureToArray(PyObject fig, int dpi = 200, string format = "png")
         {
             if (fig.GetAttr("__class__").Handle != PltFigureType)
             {

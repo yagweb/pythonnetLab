@@ -1,5 +1,4 @@
-﻿using Python.Runtime;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
@@ -24,7 +23,7 @@ namespace Python.Runtime
                 }
                 var meta = o.GetAttr("__array_interface__");
                 IsCStyleContiguous = meta["strides"] == null;
-                Address = new System.IntPtr((long)meta["data"][0].AsManagedObject(typeof(long)));
+                Address = new System.IntPtr((long)meta["data"][0].As<long>());
 
                 var typestr = meta["typestr"].As<string>();
                 var dtype = typestr.Substring(1);
@@ -118,7 +117,7 @@ namespace Python.Runtime
 
         internal static IntPtr NumpyArrayType;
 
-        public static PyObject New(Array content)
+        public static PyObject NewArray(Array content)
         {
             // BlockCopy possibly multidimensional array of arbitrary type to onedimensional byte array
             System.Type ElementType = content.GetType().GetElementType();
@@ -137,7 +136,7 @@ namespace Python.Runtime
             var arr = np.InvokeMethod("empty", shape, dtype);
 
             var meta = arr.GetAttr("__array_interface__");
-            var address = new System.IntPtr((long)meta["data"][0].AsManagedObject(typeof(long)));
+            var address = new System.IntPtr((long)meta["data"][0].As<long>());
 
             // Copy the data to that array
             Marshal.Copy(data, 0, address, nbytes);
