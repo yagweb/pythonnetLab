@@ -17,7 +17,7 @@ namespace Python.Runtime
         {
             public NumpyArrayInterface(PyObject o)
             {
-                if (o.GetAttr("__class__").Handle != NumpyArrayType)
+                if (o.GetPythonType().Handle != NumpyArrayType)
                 {
                     throw new Exception("object is not a numpy array");
                 }

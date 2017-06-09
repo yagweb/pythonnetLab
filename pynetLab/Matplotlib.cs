@@ -23,7 +23,7 @@ namespace Python.Runtime
 
         public static byte[] SaveFigureToArray(PyObject fig, int dpi = 200, string format = "png")
         {
-            if (fig.GetAttr("__class__").Handle != PltFigureType)
+            if (fig.GetPythonType().Handle != PltFigureType)
             {
                 throw new Exception("object is not a matplotlib Figure");
             }
