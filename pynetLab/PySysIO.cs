@@ -1,10 +1,11 @@
-﻿using System.Text;
+﻿using System;
+using System.IO;
 
 namespace Python.Runtime
 {
     public class PySysIO
     {
-        public static void ToConsole()
+        public static void ToConsoleOut()
         {
             using (Py.GIL())
             {
@@ -13,10 +14,10 @@ import sys
 from System import Console
 class output(object):
     def write(self, msg):
-        Console.Write(msg)
+        Console.Out.Write(msg)
     def writelines(self, msgs):
         for msg in msgs:
-            Console.Write(msg)
+            Console.Out.Write(msg)
     def flush(self):
         pass
     def close(self):
@@ -26,61 +27,90 @@ sys.stdout = sys.stderr = output()
             }
         }
 
-        private static SysIOStream SysIOStream = new SysIOStream();
+        private static SysIOWriter SysIOStream = new SysIOWriter();
 
-        public static void ToBuffer()
+        public static TextWriter ToTextWriter(TextWriter writer = null)
         {
             using (Py.GIL())
             {
+                if(writer != null)
+                {
+                    SysIOStream.TextWriter = writer;
+                }
                 dynamic sys = Py.Import("sys");
                 sys.stdout = sys.stderr = SysIOStream;
             }
+            return SysIOStream.TextWriter;
         }
 
-        public static void Clear()
+        public static void Flush()
         {
-            SysIOStream.clear();
-        }
-
-        public static string GetOutput()
-        {
-            return SysIOStream.getvalue();
+            SysIOStream.flush();
         }
     }
 
     /// <summary>
     /// Implement the interface of the sys.stdout redirection
     /// </summary>
-    public class SysIOStream
+    public class SysIOWriter
     {
-        private StringBuilder buffer;
-
-        public SysIOStream()
+        public TextWriter TextWriter
         {
-            buffer = new StringBuilder();
+            get;
+            internal set;
         }
 
-        public void write(string str)
+        public SysIOWriter(TextWriter writer = null)
         {
-            buffer.Append(str);
+            TextWriter = writer;
+        }
+
+        public void write(String str)
+        {
+            str = str.Replace("\n", Environment.NewLine);
+            if (TextWriter != null)
+            {
+                TextWriter.Write(str);
+            }
+            else
+            {
+                Console.Out.Write(str);
+            }
+        }
+
+        public void writelines(String[] str)
+        {
+            foreach (String line in str)
+            {
+                if (TextWriter != null)
+                {
+                    TextWriter.Write(str);
+                }
+                else
+                {
+                    Console.Out.Write(str);
+                }
+            }
         }
 
         public void flush()
         {
+            if (TextWriter != null)
+            {
+                TextWriter.Flush();
+            }
+            else
+            {
+                Console.Out.Flush();
+            }
         }
 
         public void close()
         {
-        }
-
-        public void clear()
-        {
-            buffer.Clear();
-        }
-
-        public string getvalue()
-        {
-            return buffer.ToString();
+            if (TextWriter != null)
+            {
+                TextWriter.Close();
+            }
         }
     }
 }

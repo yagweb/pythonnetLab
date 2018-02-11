@@ -1,28 +1,31 @@
 ﻿using Python.Runtime;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.IO;
 
 namespace Test
 {
     class TestSysIO
     {
-        public void Test()
+        public void ToConsoleOut()
         {
-            PySysIO.ToConsole();
-
+            // redirect to Console.Out
+            PySysIO.ToConsoleOut();
+            //test
             using (Py.GIL())
             {
                 PythonEngine.RunSimpleString("print('hello pythonnet!')");
             }
+        }
 
-            PySysIO.ToBuffer();
+        public void ToTextWriter()
+        {
+            // redirect to a TextWriter
+            var writer = new StringWriter();
+            PySysIO.ToTextWriter(writer);
             using (Py.GIL())
             {
                 PythonEngine.RunSimpleString("print('hello pythonnet!')");
             }
-            var content = PySysIO.GetOutput();
+            var content = writer.GetStringBuilder().ToString();
         }
     }
 }

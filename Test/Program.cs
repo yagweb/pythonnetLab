@@ -9,7 +9,8 @@ namespace Test
     {
         static int Main(string[] args)
         {
-            //new TestSysIO().Test();
+            new TestSysIO().ToConsoleOut();
+            new TestSysIO().ToTextWriter();
             //TestMatplotlib.Plot();
             //TestMatplotlib.PlotInWindow();
             //new TestPyConverter().TestList();
