@@ -42,6 +42,8 @@
     <Compile Include="Numpy.cs" />
     <Compile Include="Matplotlib.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="PyConverter.cs" />
+    <Compile Include="PySysIO.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\pythonnet\src\runtime\Python.Runtime.csproj">

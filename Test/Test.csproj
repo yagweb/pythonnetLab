@@ -45,6 +45,8 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestMatplotlib.cs" />
+    <Compile Include="TestPyConverter.cs" />
+    <Compile Include="TestSysIO.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\pythonnet\src\runtime\Python.Runtime.csproj">

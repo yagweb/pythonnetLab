@@ -9,10 +9,14 @@ namespace Test
     {
         static int Main(string[] args)
         {
-            TestMatplotlib.Plot();
-            TestMatplotlib.PlotInWindow();
+            //new TestSysIO().Test();
+            //TestMatplotlib.Plot();
+            //TestMatplotlib.PlotInWindow();
+            //new TestPyConverter().TestList();
+            //new TestPyConverter().TestDict();
+            //new TestPyConverter().TestObject();
+            new TestPyConverter().TestHybird();
             return 0;
         }
-
     }
 }
