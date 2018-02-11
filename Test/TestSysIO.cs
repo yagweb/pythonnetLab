@@ -1,4 +1,5 @@
 ﻿using Python.Runtime;
+using System;
 using System.IO;
 
 namespace Test
@@ -7,25 +8,42 @@ namespace Test
     {
         public void ToConsoleOut()
         {
-            // redirect to Console.Out
+            // redirect to Console.Out, I usually put this at the entrance of a program.
             PySysIO.ToConsoleOut();
+
             //test
             using (Py.GIL())
             {
-                PythonEngine.RunSimpleString("print('hello pythonnet!')");
+                PythonEngine.RunSimpleString("print('hello ConsoleOut!')");
+            }
+        }
+
+        public void ToNullTextWriter()
+        {
+            // redirect to a TextWriter
+            PySysIO.ToTextWriter();
+
+            //test
+            using (Py.GIL())
+            {
+                PythonEngine.RunSimpleString("print('hello NullTextWriter!')");
             }
         }
 
         public void ToTextWriter()
         {
             // redirect to a TextWriter
-            var writer = new StringWriter();
-            PySysIO.ToTextWriter(writer);
+            PySysIO.ToTextWriter(new StringWriter());
+
+            //test
             using (Py.GIL())
             {
-                PythonEngine.RunSimpleString("print('hello pythonnet!')");
+                PythonEngine.RunSimpleString("print('hello TextWriter!')");
             }
+
+            var writer = PySysIO.TextWriter as StringWriter;
             var content = writer.GetStringBuilder().ToString();
+            Console.WriteLine(content);
         }
     }
 }

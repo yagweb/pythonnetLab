@@ -29,14 +29,19 @@ sys.stdout = sys.stderr = output()
 
         private static SysIOWriter SysIOStream = new SysIOWriter();
 
+        public static TextWriter TextWriter
+        {
+            get
+            {
+                return SysIOStream.TextWriter;
+            }
+        }
+
         public static TextWriter ToTextWriter(TextWriter writer = null)
         {
             using (Py.GIL())
             {
-                if(writer != null)
-                {
-                    SysIOStream.TextWriter = writer;
-                }
+                SysIOStream.TextWriter = writer;
                 dynamic sys = Py.Import("sys");
                 sys.stdout = sys.stderr = SysIOStream;
             }
@@ -54,62 +59,48 @@ sys.stdout = sys.stderr = output()
     /// </summary>
     public class SysIOWriter
     {
+        private TextWriter _TextWriter;
         public TextWriter TextWriter
         {
-            get;
-            internal set;
+            get
+            {
+                return _TextWriter == null ? Console.Out : _TextWriter;
+            }
+            set
+            {
+                _TextWriter = value;
+            }
         }
 
         public SysIOWriter(TextWriter writer = null)
         {
-            TextWriter = writer;
+            this._TextWriter = writer;
         }
 
         public void write(String str)
         {
-            str = str.Replace("\n", Environment.NewLine);
-            if (TextWriter != null)
-            {
-                TextWriter.Write(str);
-            }
-            else
-            {
-                Console.Out.Write(str);
-            }
+            //str = str.Replace("\n", Environment.NewLine);
+            this.TextWriter.Write(str);
         }
 
         public void writelines(String[] str)
         {
             foreach (String line in str)
             {
-                if (TextWriter != null)
-                {
-                    TextWriter.Write(str);
-                }
-                else
-                {
-                    Console.Out.Write(str);
-                }
+                this.write(line);
             }
         }
 
         public void flush()
         {
-            if (TextWriter != null)
-            {
-                TextWriter.Flush();
-            }
-            else
-            {
-                Console.Out.Flush();
-            }
+            this.TextWriter.Flush();
         }
 
         public void close()
         {
-            if (TextWriter != null)
+            if (this._TextWriter != null)
             {
-                TextWriter.Close();
+                this._TextWriter.Close();
             }
         }
     }
