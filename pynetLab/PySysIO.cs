@@ -79,7 +79,6 @@ sys.stdout = sys.stderr = output()
 
         public void write(String str)
         {
-            //str = str.Replace("\n", Environment.NewLine);
             this.TextWriter.Write(str);
         }
 

@@ -9,9 +9,9 @@ namespace Test
     {
         static int Main(string[] args)
         {
-            new TestSysIO().ToConsoleOut();
-            new TestSysIO().ToNullTextWriter();
-            new TestSysIO().ToTextWriter();
+            //new TestSysIO().ToConsoleOut();
+            //new TestSysIO().ToNullTextWriter();
+            //new TestSysIO().ToTextWriter();
             //TestMatplotlib.Plot();
             //TestMatplotlib.PlotInWindow();
             //new TestPyConverter().TestList();

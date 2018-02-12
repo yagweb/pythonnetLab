@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
 
 namespace Python.Runtime
 {
@@ -12,27 +13,37 @@ namespace Python.Runtime
         public PyConverter()
         {
             this.Converters = new List<PyClrTypeBase>();
-            this.PythonConverters = new Dictionary<IntPtr, PyClrTypeBase>();
-            this.ClrConverters = new Dictionary<Type, PyClrTypeBase>();
+            this.PythonConverters = new Dictionary<IntPtr, Dictionary<Type, PyClrTypeBase>>();
+            this.ClrConverters = new Dictionary<Type, Dictionary<IntPtr, PyClrTypeBase>>();
         }
 
         private List<PyClrTypeBase> Converters;
 
-        private Dictionary<IntPtr, PyClrTypeBase> PythonConverters;
+        private Dictionary<IntPtr, Dictionary<Type, PyClrTypeBase>> PythonConverters;
 
-        private Dictionary<Type, PyClrTypeBase> ClrConverters;
+        private Dictionary<Type, Dictionary<IntPtr, PyClrTypeBase>> ClrConverters;
 
         public void Add(PyClrTypeBase converter)
         {
             this.Converters.Add(converter);
-            if (!this.PythonConverters.ContainsKey(converter.PythonType.Handle))
+
+            Dictionary<Type, PyClrTypeBase> py_converters;
+            var state = this.PythonConverters.TryGetValue(converter.PythonType.Handle, out py_converters);
+            if (!state)
             {
-                this.PythonConverters.Add(converter.PythonType.Handle, converter);
+                py_converters = new Dictionary<Type, PyClrTypeBase>();
+                this.PythonConverters.Add(converter.PythonType.Handle, py_converters);
             }
+            py_converters.Add(converter.ClrType, converter);
+
+            Dictionary<IntPtr, PyClrTypeBase> clr_converters;
+            state = this.ClrConverters.TryGetValue(converter.ClrType, out clr_converters);
             if (!this.ClrConverters.ContainsKey(converter.ClrType))
             {
-                this.ClrConverters.Add(converter.ClrType, converter);
+                clr_converters = new Dictionary<IntPtr, PyClrTypeBase>();
+                this.ClrConverters.Add(converter.ClrType, clr_converters);
             }
+            clr_converters.Add(converter.PythonType.Handle, converter);
         }
 
         public void AddObjectType<T>(PyObject pyType, PyConverter converter = null)
@@ -69,39 +80,53 @@ namespace Python.Runtime
 
         public T ToClr<T>(PyObject obj)
         {
-            return (T)ToClr(obj);
+            return (T)ToClr(obj, typeof(T));
         }
 
-        public object ToClr(PyObject obj)
+        public object ToClr(PyObject obj, Type t = null)
         {
             if (obj == null)
             {
                 return null;
             }
             PyObject type = obj.GetPythonType();
-            PyClrTypeBase converter;
-            var state = PythonConverters.TryGetValue(type.Handle, out converter);
+            Dictionary<Type, PyClrTypeBase> converters;
+            var state = PythonConverters.TryGetValue(type.Handle, out converters);
             if (!state)
             {
                 throw new Exception($"Type {type.ToString()} not recognized");
             }
-            return converter.ToClr(obj);
+            if(t == null || !converters.ContainsKey(t))
+            {
+                return converters.Values.First().ToClr(obj);
+            }
+            else
+            {
+                return converters[t].ToClr(obj);
+            }
         }
 
-        public PyObject ToPython(object clrObj)
+        public PyObject ToPython(object clrObj, IntPtr? t = null)
         {
             if (clrObj == null)
             {
                 return null;
             }
             Type type = clrObj.GetType();
-            PyClrTypeBase converter;
-            var state = ClrConverters.TryGetValue(type, out converter);
+            Dictionary<IntPtr, PyClrTypeBase> converters;
+            var state = ClrConverters.TryGetValue(type, out converters);
             if (!state)
             {
                 throw new Exception($"Type {type.ToString()} not recognized");
             }
-            return converter.ToPython(clrObj);
+            if(t == null || !converters.ContainsKey(t.Value))
+            {
+                return converters.Values.First().ToPython(clrObj);
+            }
+            else
+            {
+                return converters[t.Value].ToPython(clrObj);
+            }
         }
     }
 
@@ -176,6 +201,25 @@ namespace Python.Runtime
         public override PyObject ToPython(object clrObj)
         {
             return new PyString(Convert.ToString(clrObj));
+        }
+    }
+
+    public class BooleanType : PyClrTypeBase
+    {
+        public BooleanType()
+            : base("bool", typeof(bool))
+        {
+        }
+
+        public override object ToClr(PyObject pyObj)
+        {
+            return pyObj.As<bool>();
+        }
+
+        public override PyObject ToPython(object clrObj)
+        {
+            //return new PyBoolean(Convert.ToString(clrObj));
+            throw new NotImplementedException();
         }
     }
 
@@ -258,15 +302,115 @@ namespace Python.Runtime
             this.Name = null;
         }
 
-        public PyPropetryAttribute(string name)
+        public PyPropetryAttribute(string name, string py_type = null)
         {
             this.Name = name;
+            this.PythonTypeName = py_type;
         }
 
         public string Name
         {
             get;
             private set;
+        }
+
+        public string PythonTypeName
+        {
+            get;
+            private set;
+        }
+
+        public IntPtr? PythonType
+        {
+            get;
+            set;
+        }
+    }
+
+    abstract class ClrMemberInfo
+    {
+        public string PyPropertyName;
+
+        public IntPtr? PythonType;
+
+        public string ClrPropertyName;
+
+        public Type ClrType;
+
+        public PyConverter Converter;
+
+        public abstract void SetPyObjAttr(PyObject pyObj, object clrObj);
+
+        public abstract void SetClrObjAttr(object clrObj, PyObject pyObj);
+    }
+
+    class ClrPropertyInfo : ClrMemberInfo
+    {
+        public ClrPropertyInfo(PropertyInfo info, PyPropetryAttribute py_info, PyConverter converter)
+        {
+            this.PropertyInfo = info;
+            this.ClrPropertyName = info.Name;
+            this.ClrType = info.PropertyType;
+            this.PyPropertyName = py_info.Name;
+            if (string.IsNullOrEmpty(this.PyPropertyName))
+            {
+                this.PyPropertyName = info.Name;
+            }
+            //this.PythonType = converter.Get();
+            this.Converter = converter;
+        }
+
+        public PropertyInfo PropertyInfo
+        {
+            get;
+            private set;
+        }
+
+        public override void SetPyObjAttr(PyObject pyObj, object clrObj)
+        {
+            var clr_value = this.PropertyInfo.GetValue(clrObj, null);
+            var py_value = this.Converter.ToPython(clr_value);
+            pyObj.SetAttr(this.PyPropertyName, py_value);
+        }
+
+        public override void SetClrObjAttr(object clrObj, PyObject pyObj)
+        {
+            var py_value = pyObj.GetAttr(this.PyPropertyName);
+            var clr_value = this.Converter.ToClr(py_value);
+            this.PropertyInfo.SetValue(clrObj, clr_value, null);
+        }
+    }
+
+    class ClrFieldInfo : ClrMemberInfo
+    {
+        public ClrFieldInfo(FieldInfo info, PyPropetryAttribute py_info, PyConverter converter)
+        {
+            this.FieldInfo = info;
+            this.ClrPropertyName = info.Name;
+            this.ClrType = info.FieldType;
+            this.PyPropertyName = py_info.Name;
+            if (string.IsNullOrEmpty(this.PyPropertyName))
+            {
+                this.PyPropertyName = info.Name;
+            }
+            //this.PythonType = converter.Get();
+            this.Converter = converter;
+        }
+
+        public FieldInfo FieldInfo;
+
+        public override void SetPyObjAttr(PyObject pyObj, object clrObj)
+        {
+            var clr_value = this.FieldInfo.GetValue(clrObj);
+            var py_value = this.Converter.ToPython(clr_value);
+            pyObj.SetAttr(this.PyPropertyName, py_value);
+        }
+
+        public override void SetClrObjAttr(object clrObj, PyObject pyObj)
+        {
+            var py_value = pyObj.GetAttr(this.PyPropertyName);
+            var clr_value = this.Converter.ToClr(py_value);
+            this.FieldInfo.SetValue(clrObj, clr_value);
         }
     }
 
@@ -279,8 +423,7 @@ namespace Python.Runtime
             : base(pyType, typeof(T))
         {
             this.Converter = converter;
-            this.Properties = new Dictionary<string, PropertyInfo>();
-            this.Fields = new Dictionary<string, FieldInfo>();
+            this.Properties = new List<ClrMemberInfo>();
 
             // Get all attributes
             foreach (var property in this.ClrType.GetProperties())
@@ -290,13 +433,8 @@ namespace Python.Runtime
                 {
                     continue;
                 }
-                string pyname = (attr[0] as PyPropetryAttribute).Name;
-                if(string.IsNullOrEmpty(pyname))
-                {
-                    pyname = property.Name;
-                }
-
-                this.Properties.Add(pyname, property);
+                var py_info = attr[0] as PyPropetryAttribute;
+                this.Properties.Add(new ClrPropertyInfo(property, py_info, this.Converter));
             }
 
             foreach (var field in this.ClrType.GetFields())
@@ -306,54 +444,31 @@ namespace Python.Runtime
                 {
                     continue;
                 }
-                string pyname = (attr[0] as PyPropetryAttribute).Name;
-                if (string.IsNullOrEmpty(pyname))
-                {
-                    pyname = field.Name;
-                }
-
-                this.Fields.Add(pyname, field);
+                var py_info = attr[0] as PyPropetryAttribute;
+                this.Properties.Add(new ClrFieldInfo(field, py_info, this.Converter));
             }
         }
         
         private PyConverter Converter;
 
-        private Dictionary<string, PropertyInfo> Properties;
-
-        private Dictionary<string, FieldInfo> Fields;
+        private List<ClrMemberInfo> Properties;
 
         public override object ToClr(PyObject pyObj)
         {
-            var obj = Activator.CreateInstance(this.ClrType);
-            foreach(var pair in this.Properties)
+            var clrObj = Activator.CreateInstance(this.ClrType);
+            foreach(var item in this.Properties)
             {
-                var value = pyObj.GetAttr(pair.Key);
-                var _value = this.Converter.ToClr(value);
-                pair.Value.SetValue(obj, _value, null);
+                item.SetClrObjAttr(clrObj, pyObj);
             }
-            foreach (var pair in this.Fields)
-            {
-                var value = pyObj.GetAttr(pair.Key);
-                var _value = this.Converter.ToClr(value);
-                pair.Value.SetValue(obj, _value);
-            }
-            return obj;
+            return clrObj;
         }
 
         public override PyObject ToPython(object clrObj)
         {
             var pyObj = this.PythonType.Invoke();
-            foreach (var pair in this.Properties)
+            foreach (var item in this.Properties)
             {
-                var value = pair.Value.GetValue(clrObj, null);
-                var _value = this.Converter.ToPython(value);
-                pyObj.SetAttr(pair.Key, _value);
-            }
-            foreach (var pair in this.Fields)
-            {
-                var value = pair.Value.GetValue(clrObj);
-                var _value = this.Converter.ToPython(value);
-                pyObj.SetAttr(pair.Key, _value);
+                item.SetPyObjAttr(pyObj, clrObj);
             }
             return pyObj;
         }
