@@ -22,7 +22,7 @@ namespace Test
             
             // it will be used to set the PythonPath with defaut values
             PythonEngine.PythonHome = python;
-            Console.WriteLine(PythonEngine.PythonPath);
+            //Console.WriteLine(PythonEngine.PythonPath);
             // Sometimes, we don't want to embed a completed CPython, 
             // and we only want to distrute our app with miminum files
             // then, we can set the Python Module search Path by hand
@@ -50,7 +50,7 @@ namespace Test
             //new TestSysIO().ToNullTextWriter();
             //new TestSysIO().ToTextWriter();
 
-            TestPyQt.PyQt4PurePython(); //passed
+            //TestPyQt.PyQt4PurePython(); //passed
             //TestPyQt.PyQt5PurePython(); //failed
 
             // Py3.6 + Qt5Agg, crashed down!
@@ -68,6 +68,8 @@ namespace Test
             //new TestPyConverter().TestDict();
             //new TestPyConverter().TestObject();
             //new TestPyConverter().TestHybird();
+
+            REPLinWPF.Main();
 
             return 0;
         }
