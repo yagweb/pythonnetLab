@@ -44,8 +44,10 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="REPLinWPF.cs" />
     <Compile Include="TestMatplotlib.cs" />
     <Compile Include="TestPyConverter.cs" />
+    <Compile Include="TestPyQt.cs" />
     <Compile Include="TestSysIO.cs" />
   </ItemGroup>
   <ItemGroup>

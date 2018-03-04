@@ -1,4 +1,5 @@
 ﻿using Python.Runtime;
+using System;
 using System.IO;
 using System.Threading;
 using System.Windows;
@@ -8,18 +9,39 @@ namespace Test
 {
     public class TestMatplotlib
     {
-        public static void Plot()
+        public static void SetUp(string backend)
         {
             using (Py.GIL())
             {
                 Numpy.Initialize();
-                Matplotlib.Initialize();
+                Matplotlib.Initialize(backend);
 
+                //PythonEngine.Exec("import matplotlib;print(matplotlib.get_backend())");
+                Console.WriteLine(Matplotlib.get_backend());
+            }
+        }
+
+        public static void Plot()
+        {
+            using (Py.GIL())
+            {
+                dynamic plt = Py.Import("matplotlib.pylab");
+                dynamic np = Py.Import("numpy");
+
+                var x = Numpy.NewArray(new double[] { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 });
+                var y = np.sin(x);
+                //plt.plot(x);
+                plt.figure();
+                //plt.scatter(x, y);
+                plt.show();
+            }
+            using (Py.GIL())
+            {
                 var scope = Py.CreateScope();
                 var np = scope.Import("numpy", "np");
                 var plt = scope.Import("matplotlib.pylab", "plt");
 
-                var x = Numpy.NewArray(new double[]{ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 });
+                var x = Numpy.NewArray(new double[] { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 });
                 var y = np.sin(x);
                 scope.Set("x", x);
                 scope.Set("y", y);
@@ -43,9 +65,6 @@ namespace Test
             byte[] plotdata;
             using (Py.GIL())
             {
-                Numpy.Initialize();
-                Matplotlib.Initialize();
-
                 var scope = Py.CreateScope();
                 var np = scope.Import("numpy", "np");
                 var plt = scope.Import("matplotlib.pylab", "plt");
